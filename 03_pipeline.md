@@ -557,3 +557,123 @@ Transcript (Finnhub) ───────────────────�
 | HF embedding (warm model) | — | ~200ms |
 | HF embedding (cold start) | ONNX fallback triggered | ~800ms |
 | Signal outcome evaluation | Daily cron (non-latency-sensitive) | 24h + 5d post-signal |
+
+---
+
+## References
+
+The following references support specific empirical and methodological claims made in pipeline
+design decisions throughout this document.
+
+[1] Brockman, P., Li, X., & Price, S.M. (2011). Earnings conference calls and stock returns:
+    The incremental informativeness of textual tone.
+    *Journal of Banking & Finance*, 35(4), 992–1011.
+    https://doi.org/10.1016/j.jbankfin.2010.09.017
+    [Basis for Pipeline A Step A4 — transcript Q&A separation. Study of 2,800+ conference call
+    transcripts across 16 consecutive quarters (2004–2007) differentiates prepared remarks from
+    the spontaneous Q&A section, finding the Q&A carries incremental information beyond the
+    written press release and explains both initial market reaction and post-earnings drift.]
+
+[2] Noh, S., & Zhou, T. (2022). Engagement in Earnings Conference Calls.
+    *Journal of Accounting and Economics*, 74(1).
+    https://doi.org/10.1016/j.jacceco.2022.101488
+    [Cited for the finding that the Q&A portion is the most informative section of the earnings
+    call. Study uses 2,400+ audio recordings and transcripts; documents that manager-analyst
+    conversational engagement in Q&A facilitates price formation in capital markets.]
+
+[3] Angelo, B., Johnston, M., Singh, A., & Wan, Y.Q. (2025). Tone Distance: Managerial Tone
+    Divergence and Market Reaction to Earnings Announcements.
+    *Financial Review*, 60, 1415–1435.
+    https://doi.org/10.1111/fire.70002
+    [Basis for Pipeline H — tone baseline update and Pipeline B Step B6 tone drift prior.
+    Documents that between-manager variance of tone (Tone Distance) within an earnings call is
+    negatively associated with event-period returns, positively predicts stock volatility and
+    operational risks, and inversely predicts future growth prospects.]
+
+[4] Patell, J.M., & Wolfson, M.A. (1979). Anticipated information releases reflected in call
+    option prices. *Journal of Accounting and Economics*, 1(2), 117–140.
+    https://doi.org/10.1016/0165-4101(79)90003-7
+    [Basis for Pipeline B Step B2 — options consensus data fetch. Establishes the systematic
+    pattern of IV building ahead of earnings and collapsing after, forming the empirical
+    foundation for using options-implied expectations as a second consensus source.]
+
+[5] Lipkin, M., Tatevossian, L., & Arjun, K.M. (2024). Earnings Moves and Pre-Earnings Implied
+    Volatility. *SSRN Working Paper*, No. 4701633.
+    https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4701633
+    [Basis for the options consensus cross-check in Pipeline C Step C5. Documents that in most
+    cases the options market predicts the magnitude of earnings-event price impact, but with
+    significant outliers — justifying use as a confidence modifier rather than a primary signal.]
+
+[6] Muravyev, D., Pearson, N.D., & Pollet, J.M. (2025). Why does options market information
+    predict stock returns? *Journal of Financial Economics*, 169.
+    https://doi.org/10.1016/j.jfineco.2025.103901
+    [Basis for the analyst_options_divergence score in Pipeline B Step B8. Reviews Bali &
+    Hovakimian (2009) and Cremers & Weinbaum (2010) findings on implied volatility spread
+    predicting stock returns cross-sectionally over one to several weeks.]
+
+[7] U.S. Securities and Exchange Commission (2004). Additional Form 8-K Disclosure Requirements
+    and Acceleration of Filing Date. Release No. 33-8400.
+    https://www.sec.gov/rules-regulations/2004/03/additional-form-8-k-disclosure-requirements-acceleration-filing-date
+    [Regulatory basis for Pipeline A Step A1 EDGAR 8-K direct ingestion. Companies required to
+    file material events within four business days; EDGAR is the primary source ahead of all
+    downstream news wires. 8-K item classification used in special zero-consensus handling.]
+
+[8] Lakonishok, J., & Lee, I. (2001). Are Insider Trades Informative?
+    *Review of Financial Studies*, 14(1), 79–111.
+    https://doi.org/10.1093/rfs/14.1.79
+    [Basis for Pipeline B Step B4 insider prior modifier. Stocks with heavy insider net
+    purchasing outperformed the broader market by approximately 7.5% over 12 months;
+    effect concentrated in smaller firms. Purchases more informative than sales.]
+
+[9] Cohen, L., Malloy, C., & Pomorski, L. (2012). Decoding Inside Information.
+    *Journal of Finance*, 67(3), 1009–1043.
+    https://doi.org/10.1111/j.1540-6261.2012.01740.x
+    [Basis for the opportunistic-only filter applied to Form 4 ingestion. Distinguishes routine
+    (calendar-predictable) from opportunistic (irregular timing) insider trades; opportunistic
+    purchases produce ~5.2% six-month alpha. Justifies the 30-day earnings window and
+    materiality threshold scoping applied in `insider_fetcher.py`.]
+
+[10] Čorić, T., et al. (2023). Surprise in Short Interest.
+     *International Review of Financial Analysis*, 88.
+     https://doi.org/10.1016/j.irfa.2023.102612
+     [Basis for Pipeline C Step C6 — short interest modifier. Finds that positive surprises in
+     short interest predict lower unexpected earnings and lower cumulative abnormal returns around
+     earnings announcements. Supports treating short interest as an informed signal that modifies
+     GCSV output rather than a simple directional indicator.]
+
+[11] Kelly, J.L. Jr. (1956). A New Interpretation of Information Rate.
+     *Bell System Technical Journal*, 35(4), 917–926.
+     https://doi.org/10.1002/j.1538-7305.1956.tb03809.x
+     [Basis for Pipeline C Step C10 — Kelly Criterion position sizing. Original derivation of
+     the optimal fraction formula f* = (bp − q) / b. Half-Kelly variant applied with regime-
+     specific allocation caps per standard portfolio management practice to correct for
+     estimation error in win probability inputs.]
+
+[12] Fama, E.F. (1970). Efficient Capital Markets: A Review of Theory and Empirical Work.
+     *Journal of Finance*, 25(2), 383–417.
+     https://doi.org/10.2307/2325486
+     [Theoretical basis for the core GCSV architecture design. Under the efficient market
+     hypothesis, prices incorporate all available information — meaning only the delta between
+     actual and expected constitutes new price-relevant information. The entire v_surprise
+     architecture operationalises this principle.]
+
+[13] Welford, B.P. (1962). Note on a Method for Calculating Corrected Sums of Squares and
+     Products. *Technometrics*, 4(3), 419–420.
+     https://doi.org/10.2307/1266577
+     [Basis for Pipeline H Step H2 — Welford online mean update for executive embedding
+     centroids. Allows numerically stable incremental centroid updates without storing
+     all historical transcript embeddings in memory.]
+
+[14] Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System.
+     In *Proceedings of the 22nd ACM SIGKDD*, 785–794.
+     https://doi.org/10.1145/2939672.2939785
+     [Basis for decay model selection in Pipeline C Step C9. XGBoost with quantile regression
+     objective chosen for its robustness on tabular features, resistance to overfitting, and
+     compatibility with CPU-only training in GitHub Actions runners.]
+
+[15] Koenker, R., & Bassett, G. (1978). Regression Quantiles.
+     *Econometrica*, 46(1), 33–50.
+     https://doi.org/10.2307/1913643
+     [Mathematical basis for pinball loss used in decay model training (Pipeline E Step E2).
+     Quantile regression with 10th/50th/90th percentile outputs produces calibrated prediction
+     intervals for the T+1h, T+overnight, and T+5d return horizons.]

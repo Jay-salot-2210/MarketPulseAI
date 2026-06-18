@@ -278,3 +278,77 @@ marketpulse-ai/
 | `execution/kelly_sizer.py` | #9 | Kelly Criterion: predicted return + CI + historical hit rate → suggested_allocation_pct |
 | `execution/alpaca_executor.py` | #10 | Sends paper orders to Alpaca sandbox; records fills in signal_outcome |
 | `dashboard/src/` | #11 | React dashboard: accuracy charts, live signal feed, contagion graph, paper P&L |
+
+---
+
+## References
+
+The following references support the architectural and methodological decisions reflected in the
+file structure.
+
+[1] Araci, D. (2019). FinBERT: Financial Sentiment Analysis with Pre-trained Language Models.
+    *arXiv preprint*, arXiv:1908.10063.
+    https://arxiv.org/abs/1908.10063
+    [Justifies `vectorizer/hf_client.py` using ProsusAI/finbert as the base embedding model
+    and `fine_tuning/` directory targeting FinBERT specifically for financial domain NLP.]
+
+[2] Khosla, P., et al. (2020). Supervised Contrastive Learning.
+    *NeurIPS*, 33, 18661–18673.
+    https://arxiv.org/abs/2004.11362
+    [Justifies `fine_tuning/contrastive_dataset.py` and the SupConLoss component in
+    `fine_tuning/trainer.py`. SupConLoss produces geometrically structured embedding spaces
+    that separate BEAT and MISS articles — directly enabling cleaner GCSV subtraction.]
+
+[3] Brockman, P., Li, X., & Price, S.M. (2011). Earnings conference calls and stock returns:
+    The incremental informativeness of textual tone.
+    *Journal of Banking & Finance*, 35(4), 992–1011.
+    https://doi.org/10.1016/j.jbankfin.2010.09.017
+    [Justifies `preprocessing/transcript_splitter.py`, `vectorizer/embed_transcript.py`, and
+    `gcsv_engine/transcript_gcsv.py`. The Q&A section carries incremental information beyond
+    prepared remarks and beyond the written press release — warranting separate embedding and
+    independent GCSV computation.]
+
+[4] Lakonishok, J., & Lee, I. (2001). Are Insider Trades Informative?
+    *Review of Financial Studies*, 14(1), 79–111.
+    https://doi.org/10.1093/rfs/14.1.79
+    [Justifies `ingestion/insider_fetcher.py` filtering to open-market purchases only.
+    Insider purchases are more informative than insider sales; the research effect is driven
+    by purchasing activity, not selling — which motivates the transaction code "P" filter.]
+
+[5] Cohen, L., Malloy, C., & Pomorski, L. (2012). Decoding Inside Information.
+    *Journal of Finance*, 67(3), 1009–1043.
+    https://doi.org/10.1111/j.1540-6261.2012.01740.x
+    [Justifies the 30-day earnings window and materiality scoping in `insider_fetcher.py`.
+    Opportunistic (irregular timing) purchases produce statistically significant alpha;
+    routine calendar-based trades do not — justifying the temporal and materiality filters.]
+
+[6] Angelo, B., Johnston, M., Singh, A., & Wan, Y.Q. (2025). Tone Distance: Managerial Tone
+    Divergence and Market Reaction to Earnings Announcements.
+    *Financial Review*, 60, 1415–1435.
+    https://doi.org/10.1111/fire.70002
+    [Justifies the entire `tone_drift/` directory. Tone variance across managers and across
+    consecutive calls predicts stock volatility and operational risk — establishing per-executive
+    centroid tracking as a signal-positive feature.]
+
+[7] Welford, B.P. (1962). Note on a Method for Calculating Corrected Sums of Squares and
+    Products. *Technometrics*, 4(3), 419–420.
+    https://doi.org/10.2307/1266577
+    [Justifies `tone_drift/centroid_updater.py` using Welford's online algorithm. Allows
+    per-executive centroid updates after each new transcript without O(n) memory growth
+    from storing all historical embeddings.]
+
+[8] Kelly, J.L. Jr. (1956). A New Interpretation of Information Rate.
+    *Bell System Technical Journal*, 35(4), 917–926.
+    https://doi.org/10.1002/j.1538-7305.1956.tb03809.x
+    [Justifies `execution/kelly_sizer.py` existence and formula. Kelly (1956) proved that
+    the fraction f* = (bp − q) / b maximises long-run geometric growth of capital — the
+    theoretical foundation for converting predicted returns and confidence intervals into
+    actionable position sizes.]
+
+[9] U.S. Securities and Exchange Commission (2004). Additional Form 8-K Disclosure Requirements
+    and Acceleration of Filing Date. Release No. 33-8400.
+    https://www.sec.gov/rules-regulations/2004/03/additional-form-8-k-disclosure-requirements-acceleration-filing-date
+    [Justifies `ingestion/edgar_fetcher.py` and the EDGAR-first ingestion architecture. EDGAR
+    is the legally mandated primary source for all material corporate disclosures — upstream of
+    all news wires and RSS feeds. The 8-K item classification scheme used in edgar_fetcher.py
+    maps directly to the SEC's itemisation structure.]

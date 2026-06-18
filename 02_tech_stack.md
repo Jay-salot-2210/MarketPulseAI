@@ -232,3 +232,89 @@ Dashboard hosting                        Static deploy (Vercel free tier)  $0
 ────────────────────────────────────────────────────────────────────────────────────────
 TOTAL MONTHLY INFRASTRUCTURE COST                                          $0
 ```
+
+---
+
+## 15. References
+
+The following references support specific technical and methodological claims made in this document.
+
+[1] Araci, D. (2019). FinBERT: Financial Sentiment Analysis with Pre-trained Language Models.
+    *arXiv preprint*, arXiv:1908.10063.
+    https://arxiv.org/abs/1908.10063
+    [Basis for selecting ProsusAI/finbert as the embedding engine. FinBERT is pre-trained on
+    Reuters TRC2-financial corpus (~1.8 million articles) plus 10-K filings and earnings calls.
+    Outperforms general-purpose BERT on financial sentiment benchmarks.]
+
+[2] Devlin, J., Chang, M.W., Lee, K., & Toutanova, K. (2019). BERT: Pre-training of Deep
+    Bidirectional Transformers for Language Understanding. In *Proceedings of NAACL-HLT 2019*,
+    4171–4186.
+    https://arxiv.org/abs/1810.04805
+    [Foundational architecture underlying FinBERT. Establishes bidirectional transformer
+    pre-training; 768-dimensional CLS token representation used as document embedding vector.]
+
+[3] Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System.
+    In *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery
+    and Data Mining*, 785–794.
+    https://doi.org/10.1145/2939672.2939785
+    [Basis for XGBoost selection as the temporal decay model. Documents gradient-boosted trees'
+    robustness on tabular features, resistance to overfitting with regularisation, and
+    interpretability via feature importance. Quantile regression objective used for calibrated
+    confidence intervals.]
+
+[4] Koenker, R., & Bassett, G. (1978). Regression Quantiles.
+    *Econometrica*, 46(1), 33–50.
+    https://doi.org/10.2307/1913643
+    [Mathematical basis for pinball (quantile) loss used to train the 10th/50th/90th percentile
+    XGBoost regressors. Pinball loss is the standard objective for quantile regression models
+    producing calibrated prediction intervals.]
+
+[5] Khosla, P., et al. (2020). Supervised Contrastive Learning.
+    In *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 18661–18673.
+    https://arxiv.org/abs/2004.11362
+    [Theoretical basis for SupConLoss used in FinBERT-Surprise fine-tuning. Documents that
+    supervised contrastive loss produces more geometrically structured embedding spaces than
+    cross-entropy alone — directly relevant to the goal of separating BEAT and MISS article
+    embeddings in latent space.]
+
+[6] Welford, B.P. (1962). Note on a Method for Calculating Corrected Sums of Squares and
+    Products. *Technometrics*, 4(3), 419–420.
+    https://doi.org/10.2307/1266577
+    [Basis for the incremental centroid update algorithm in `centroid_updater.py`. Welford's
+    online algorithm computes running mean and variance in a single pass without storing all
+    historical values — essential for per-executive embedding centroid maintenance without
+    O(n) storage growth.]
+
+[7] Kelly, J.L. Jr. (1956). A New Interpretation of Information Rate.
+    *Bell System Technical Journal*, 35(4), 917–926.
+    https://doi.org/10.1002/j.1538-7305.1956.tb03809.x
+    [Original derivation of the Kelly Criterion used in `kelly_sizer.py` for position sizing.
+    Half-Kelly variant used in production per standard portfolio management practice to account
+    for estimation error in win probability.]
+
+[8] FINRA (2025). Short Interest Data Publication Schedule and Methodology.
+    https://www.finra.org/investors/learn-to-invest/advanced-investing/short-selling/short-interest
+    [Authoritative source for short interest data methodology. FINRA collects biweekly short
+    position reports from all registered broker-dealers and publishes aggregate short interest
+    figures for all US equity securities.]
+
+[9] U.S. Securities and Exchange Commission (2004). Additional Form 8-K Disclosure Requirements
+    and Acceleration of Filing Date. Release No. 33-8400.
+    https://www.sec.gov/rules-regulations/2004/03/additional-form-8-k-disclosure-requirements-acceleration-filing-date
+    [Regulatory basis for EDGAR 8-K ingestion. Documents that companies are required to file
+    material events within four business days, establishing EDGAR as the primary and fastest
+    source for material corporate disclosures ahead of all secondary news wires.]
+
+[10] Lundberg, S.M., & Lee, S.I. (2017). A Unified Approach to Interpreting Model Predictions.
+     In *Advances in Neural Information Processing Systems (NeurIPS)*, 30, 4765–4774.
+     https://arxiv.org/abs/1705.07874
+     [Theoretical basis for SHAP (SHapley Additive exPlanations) used in decay model
+     interpretability via the `shap` library. SHAP values provide game-theoretically
+     grounded feature attribution for individual predictions.]
+
+[11] Patell, J.M., & Wolfson, M.A. (1979). Anticipated information releases reflected in call
+     option prices. *Journal of Accounting and Economics*, 1(2), 117–140.
+     https://doi.org/10.1016/0165-4101(79)90003-7
+     [Foundational research establishing that implied volatility increases systematically ahead
+     of earnings announcements and collapses after — the empirical basis for using IV term
+     structure as an options-derived consensus signal in Innovation 1.]

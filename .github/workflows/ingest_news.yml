@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests supabase python-dotenv
+          pip install requests supabase python-dotenv torch transformers sentence-transformers scikit-learn
 
       - name: 📥 Phase 1 - Run News Fetcher
         env:
