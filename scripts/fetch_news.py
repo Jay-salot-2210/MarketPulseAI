@@ -25,7 +25,7 @@ def fetch_latest_news():
         source = item.get('source','').strip()
         if not source:
             source = 'Finnhub'
-            
+
         body_prepared = f"{headline}.{summary}"
 
         ticker = item.get('related','GEN')
@@ -34,6 +34,7 @@ def fetch_latest_news():
         data = {
             "url_hash" : url_hash,
             "ticker" : ticker,
+            "source":source,
             "body_prepared":body_prepared
         }
         try:
