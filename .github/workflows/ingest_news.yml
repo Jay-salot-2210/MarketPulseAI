@@ -28,4 +28,4 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         run: |
-          python scripts/fetch_news.py
+          python -m scripts.fetch_news
