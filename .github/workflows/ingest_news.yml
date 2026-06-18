@@ -1,12 +1,12 @@
 name: Live News Ingestion
 
 on:
-  workflow_dispatch: # This allows the Render webhook to trigger the action manually
-  schedule:
-    - cron: '0 * * * *' # Backup failsafe: runs automatically once every hour
+  workflow_dispatch: 
+    schedule:
+    - cron: '0 * * * *' 
 
 jobs:
-  ingest:
+  ingest_and_process:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -21,11 +21,17 @@ jobs:
         run: |
           pip install requests supabase python-dotenv
 
-      - name: Run News Fetcher
+      - name: 📥 Phase 1 - Run News Fetcher
         env:
-          # We pass the secrets from GitHub to the Python script
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         run: |
           python -m scripts.fetch_news
+
+      - name: 🧠 Phase 2 - Run Processing Engine
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python -m scripts.process_articles
