@@ -1,6 +1,7 @@
 import os
 import hashlib
 import requests
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from config.settings import db
 
@@ -22,32 +23,43 @@ def fetch_latest_news():
     
     # Process the top 15 most recent articles
     for item in news_items[:15]: 
+        # 1. URL Hash (Matches schema)
         article_url = item.get('url', '').strip()
         url_hash = hashlib.md5(article_url.encode()).hexdigest()
         
-        headline = item.get('headline', '').strip()
+        # 2. Title (Matches schema)
+        title = item.get('headline', '').strip()
+        
+        # 3. Body Prepared (Matches schema)
         summary = item.get('summary', '').strip()
+        body_prepared = f"{title}. {summary}"
         
-        # Grab source safely
-        news_source = item.get('source', '').strip()
-        if not news_source:
-            news_source = 'Finnhub'
+        # 4. Source (Matches schema)
+        source = item.get('source', '').strip()
+        if not source:
+            source = 'Finnhub'
         
-        # Combined field for pipeline text intelligence
-        body_prepared = f"{headline}. {summary}"
-        
-        ticker = item.get('related', 'GEN')
+        # 5. Ticker (Matches schema)
+        ticker = item.get('related', '')
         if not ticker:
             ticker = 'GEN'
             
-        # Build payload satisfying all NOT NULL constraints in your schema
+        # 6. Published At (Matches schema - required 'timestamptz')
+        unix_time = item.get('datetime')
+        if unix_time:
+            # Convert Finnhub's UNIX time to PostgreSQL timestamptz
+            published_at = datetime.fromtimestamp(unix_time, tz=timezone.utc).isoformat()
+        else:
+            published_at = datetime.now(timezone.utc).isoformat()
+            
+        # Payload mapped 1:1 with your provided SQL schema
         data = {
             "url_hash": url_hash,
             "ticker": ticker,
-            "source": news_source,
-            "title": headline,          
-            "url": article_url,          
-            "body_prepared": body_prepared
+            "source": source,
+            "title": title,
+            "body_prepared": body_prepared,
+            "published_at": published_at
         }
         
         try:
