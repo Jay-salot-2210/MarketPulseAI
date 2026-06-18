@@ -22,6 +22,10 @@ def fetch_latest_news():
         headline = item.get('headline','').strip()
         summary = item.get('summary','').strip()
 
+        source = item.get('source','').strip()
+        if not source:
+            source = 'Finnhub'
+            
         body_prepared = f"{headline}.{summary}"
 
         ticker = item.get('related','GEN')
@@ -37,7 +41,7 @@ def fetch_latest_news():
             inserted_count +=1
         except Exception as e :
             print(f"Insertion failed for tickers {ticker} : {e}")
-            
+
 
     print(f"Successfully ingested {inserted_count} new articles into Supabase.")
 
