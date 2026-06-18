@@ -36,7 +36,8 @@ def fetch_latest_news():
             db.table("raw_articles").upsert(data).execute()
             inserted_count +=1
         except Exception as e :
-            pass
+            print(f"Insertion failed for tickers {ticker} : {e}")
+            
 
     print(f"Successfully ingested {inserted_count} new articles into Supabase.")
 
