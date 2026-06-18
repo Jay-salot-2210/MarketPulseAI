@@ -1,5 +1,5 @@
 import os
-import hashlab
+import hashlib
 import requests
 from dotenv import load_dotenv
 from config.settings import db
