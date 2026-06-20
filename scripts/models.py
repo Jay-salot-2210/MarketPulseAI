@@ -1,20 +1,34 @@
-def analyze_market_sentiment(text_content:str) -> tuple[str,float]:
+import sys
+import os
+
+# Make sure Python can find your vectorizer and strategies folders
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from strategies.finbert_analyzer import analyze_sentiment
+from vectorizer.embed_article import embed_article
+
+
+def analyze_market_sentiment(text_content: str) -> tuple[str, float]:
     """
     ML TASK 1: Determine if the news is bullish, bearish, or neutral.
-    (Drop your HuggingFace/FinBERT logic here)
+    Uses real FinBERT sentiment classification.
     """
-    # Replace with actual ML inference
-    import random
-    direction = random.choice(["bullish", "bearish", "neutral"])
-    confidence = round(random.uniform(70.0, 99.9), 2)
-    
+    result = analyze_sentiment(text_content)
+
+    label_map = {
+        "positive": "bullish",
+        "negative": "bearish",
+        "neutral":  "neutral"
+    }
+    direction  = label_map[result["label"]]
+    confidence = round(result["probabilities"][result["label"]] * 100, 2)
+
     return direction, confidence
 
-def generate_text_embeddings(text_content : str)-> list[float]:
+
+def generate_text_embeddings(text_content: str) -> list[float]:
     """
-    ML TASK 2: Convert the text into a 768-dimensional float array.
-    (Drop your sentence-transformers logic here)
+    ML TASK 2: Convert text into a 768-dimensional float array.
+    Uses real FinBERT embeddings.
     """
-    # Replace with actual vector generation   
-    import random
-    return [round(random.uniform(-1,1),4) for _ in range(768)]
+    return embed_article(text_content)
