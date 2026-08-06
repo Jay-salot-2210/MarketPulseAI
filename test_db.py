@@ -1,34 +1,35 @@
-import os
-import sys
-
-# Force Python to recognize the root folder for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from config.settings import db
 
-print("Initiating MarketPulse AI Database Check...\n")
-
-expected_tables = [
-    "raw_articles",
-    "market_regimes",
-    "consensus_baselines",
-    "embeddings",
-    "trading_signals",
-    "signal_outcome"
-]
-
-def run_diagnostics():
-    all_passed = True
-    try:
-        for table in expected_tables:
-            response = db.table(table).select("id").limit(1).execute()
-            print(f"✅ [SUCCESS] Table '{table}' is live and accessible.")
-    except Exception as e:
-        all_passed = False
-        print(f"❌ [FAILED] Error accessing table: {e}")
+def verify_consensus_table():
+    print("🔍 Querying Table 3: consensus_baseline...\n")
     
-    if all_passed:
-        print("\n🚀 ALL SYSTEMS GO: Your local environment is perfectly connected to Supabase!")
+    try:
+        # We fetch everything except the massive vector columns to keep the terminal clean
+        response = db.table("consensus_baseline") \
+            .select("id, ticker, regime, analyst_options_divergence, created_at") \
+            .order("created_at", desc=True) \
+            .limit(3) \
+            .execute()
+            
+        records = response.data
+        
+        if not records:
+            print("⚠️ Table is empty. No records found!")
+            return
+            
+        print(f"✅ Found {len(records)} recent records in the database:")
+        print("-" * 50)
+        
+        for row in records:
+            print(f"Ticker:     {row['ticker']}")
+            print(f"Regime:     {row['regime']}")
+            print(f"Divergence: {row['analyst_options_divergence']}")
+            print(f"Record ID:  {row['id']}")
+            print(f"Timestamp:  {row['created_at']}")
+            print("-" * 50)
+            
+    except Exception as e:
+        print(f"❌ Database query failed: {e}")
 
 if __name__ == "__main__":
-    run_diagnostics()
+    verify_consensus_table()
