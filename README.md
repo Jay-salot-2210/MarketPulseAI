@@ -267,6 +267,7 @@ Benchmarked across 1,250 earnings disclosures and 8-K events over an 18-month si
 ## 📜 Academic & Defense Deliverables
 
 All deliverables are generated and stored under `reports/`:
+* **`MarketPulse_AI_Master_Presentation.pptx`**: 15-slide institutional defense presentation covering all 10 innovations, empirical benchmarks, and cross-market transmission with high-resolution figures.
 * **`MarketPulse_AI_IEEE_Research_Paper.docx`**: Full IEEE Transactions on Computational Finance format research paper including Section VI on Indo-Global Multicorrelation and Figures 1–8.
 * **`MarketPulse_AI_Streamlit_App_Operational_Manual.docx` & `.md`**: Step-by-step operational manual for each tab in the terminal.
 * **`DEFENSE_PRESENTATION_SCRIPT.docx` & `PRESENTATION_DEFENSE_GUIDE.md`**: Master defense guide and Q&A covering 10 technical examination questions.
