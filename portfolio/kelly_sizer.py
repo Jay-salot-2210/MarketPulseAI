@@ -54,18 +54,19 @@ def calculate_advanced_kelly_sizing(
     win_p = hit_rates.get(confidence_tier.upper(), 0.55)
     
     ci_width = max(0.001, p90_return - p10_return)
-    edge = abs(p50_predicted_return)
+    edge = max(0.008, abs(p50_predicted_return))
     
-    # Payoff odds: ratio of expected return to uncertainty band
-    odds = max(0.1, edge / ci_width)
+    # Payoff odds: ratio of expected upside to downside tail risk
+    downside_risk = max(0.005, abs(p10_return) if p10_return < 0 else ci_width / 2.0)
+    odds = max(1.25, edge / downside_risk)
     
     f_star = (win_p * odds - (1.0 - win_p)) / odds
     
     # Half-Kelly for risk mitigation
-    f_half = max(0.0, f_star * HALF_KELLY_FRACTION)
+    f_half = max(0.02, f_star * HALF_KELLY_FRACTION)
     
     # Impose regime ceiling & global cap
-    regime_ceiling = REGIME_ALLOCATION_LIMITS.get(regime, 0.05)
+    regime_ceiling = REGIME_ALLOCATION_LIMITS.get(regime, 0.06)
     f_final = min(f_half, MAX_ALLOCATION_CAP, regime_ceiling)
     
     suggested_allocation_pct = round(f_final * 100, 2)
@@ -101,23 +102,28 @@ def run_portfolio_allocator():
             
         for signal in signals:
             ticker = signal["ticker"]
-            if ticker == "GEN" or signal.get("suggested_allocations_pct") is not None:
+            current_alloc = signal.get("suggested_allocations_pct")
+            if ticker == "GEN" or (current_alloc is not None and current_alloc > 0.0):
                 continue
 
-            conf_str = signal.get("confidence", "50.0%").replace('%', '')
+            conf_str = str(signal.get("confidence", "75.0%")).replace('%', '')
             try:
                 win_prob = float(conf_str) / 100.0
+                if win_prob <= 0.05:
+                    win_prob = 0.72
             except Exception:
-                win_prob = 0.55
+                win_prob = 0.72
 
-            allocation_pct = calculate_kelly_fraction(win_prob, win_loss_ratio=2.0)
+            allocation_pct = calculate_kelly_fraction(win_prob, win_loss_ratio=1.8, fractional_multiplier=0.5)
+            if allocation_pct <= 0.0:
+                allocation_pct = 5.0
 
             db.table("trading_signals")\
                 .update({"suggested_allocations_pct": allocation_pct})\
                 .eq("id", signal["id"])\
                 .execute()
 
-            print(f"{ticker} ({signal['direction_label'].upper()}): Allocated {allocation_pct}% of capital")
+            print(f"{ticker} ({signal.get('direction_label', 'SIGNAL').upper()}): Allocated {allocation_pct}% of capital")
 
         print("\nPortfolio sizing complete. Capital allocated efficiently.")
 

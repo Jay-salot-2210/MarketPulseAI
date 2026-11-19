@@ -33,7 +33,7 @@ def execute_pending_trades():
             seen_tickers.add(ticker)
             unique_signals.append(signal)
 
-    for signal in signals:
+    for signal in unique_signals:
         ticker = signal["ticker"]
         direction = signal["direction_label"]
         qty = 1 

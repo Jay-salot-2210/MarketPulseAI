@@ -1,8 +1,9 @@
+import re
 import requests
 import hashlib
 import uuid
 import xml.etree.ElementTree as ET
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from config.settings import db
 
 def fetch_edgar_8k(ticker):
@@ -43,7 +44,10 @@ def fetch_edgar_8k(ticker):
                 published_dt = datetime.now(timezone.utc).isoformat()
             
             summary_tag = entry.find('atom:summary', namespace)
-            summary_text = summary_tag.text if summary_tag is not None else "8-K Material Event Filing"
+            raw_summary = summary_tag.text if summary_tag is not None else "8-K Material Event Filing"
+            clean_summary = re.sub(r'<[^>]+>', ' ', raw_summary)
+            clean_summary = re.sub(r'\s+', ' ', clean_summary).strip()
+            summary_text = clean_summary if clean_summary else f"SEC 8-K Material Filing for {ticker}"
             
             # Extract the unique SEC Accession Number to use as our database ID
             filing_id = entry.find('atom:id', namespace).text.split(':')[-1]

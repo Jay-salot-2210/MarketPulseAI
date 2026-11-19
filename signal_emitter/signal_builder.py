@@ -1,9 +1,11 @@
 import uuid
+import json
 from datetime import datetime, timezone
 import numpy as np
 from loguru import logger
 from config.settings import db, SURPRISE_THRESHOLD_HIGH, SURPRISE_THRESHOLD_MEDIUM, SURPRISE_THRESHOLD_LOW
 from vectorizer.embed_article import embed_article
+from strategies.finbert_analyzer import analyze_sentiment
 from gcsv_engine.vector_ops import compute_all_surprise_vectors, magnitude
 from gcsv_engine.uncertainty_scorer import score_uncertainty
 from gcsv_engine.pre_drift_detector import detect_pre_announcement_drift
@@ -20,6 +22,16 @@ REGIME_MAGNITUDE_MULTIPLIERS = {
     "Risk-Off Volatile": 1.25,  # Higher bar required to filter systemic market noise
     "Crisis": 1.60              # Extreme noise filter
 }
+
+def _parse_vec(v):
+    if v is None:
+        return None
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except Exception:
+            pass
+    return v
 
 def assemble_v3_signal(
     ticker: str,
@@ -66,23 +78,24 @@ def assemble_v3_signal(
             .execute()
         if res.data:
             rec = res.data[0]
-            v_base = rec.get("v_consensus_base")
-            v_bear = rec.get("v_consensus_bear")
-            v_bull = rec.get("v_consensus_bull")
-            v_options = rec.get("v_consensus_options")
+            v_base = _parse_vec(rec.get("v_consensus_base"))
+            v_bear = _parse_vec(rec.get("v_consensus_bear"))
+            v_bull = _parse_vec(rec.get("v_consensus_bull"))
+            v_options = _parse_vec(rec.get("v_consensus_options"))
             div_analyst_options = rec.get("analyst_options_divergence", 0.08)
     except Exception as e:
         logger.warning(f"Could not fetch database baseline for {sym}: {e}")
         
-    # If missing in DB, generate synthetic semantic baselines
+    # If missing or incomplete in DB, synthesize rich semantic narrative anchors
     if v_base is None or v_bear is None or v_bull is None:
-        np.random.seed(hash(sym) % 2**32)
-        base_arr = np.array(v_actual) + np.random.randn(768) * 0.15
-        base_arr /= np.linalg.norm(base_arr)
-        v_base = base_arr.tolist()
-        v_bear = (base_arr - np.random.randn(768) * 0.12).tolist()
-        v_bull = (base_arr + np.random.randn(768) * 0.12).tolist()
-        v_options = (base_arr + np.random.randn(768) * 0.08).tolist()
+        bull_anchor = f"{sym} delivered a significant beat, surging past revenue and earnings consensus. Management raised forward guidance with accelerating institutional demand."
+        bear_anchor = f"{sym} missed Wall Street expectations, falling short of consensus revenue and profit targets. Guidance was revised downward amid margin compression."
+        base_anchor = f"{sym} reported quarterly results in-line with consensus estimates. Growth and margins met market expectations with steady guidance."
+        
+        v_bull = embed_article(bull_anchor)
+        v_bear = embed_article(bear_anchor)
+        v_base = embed_article(base_anchor)
+        v_options = v_base
         
     consensus_dict = {
         "v_consensus_base": v_base,
@@ -94,8 +107,26 @@ def assemble_v3_signal(
     surprises = compute_all_surprise_vectors(v_actual, consensus_dict)
     mag_base = magnitude(surprises["v_surprise_base"])
     
-    # Step 4: Base Uncertainty & Direction Scoring
-    uncertainty_result = score_uncertainty(v_actual, surprises, consensus_dict)
+    # Step 4: FinBERT Semantic Text Polarity Analysis
+    try:
+        sent_res = analyze_sentiment(article_text)
+        sent_label = sent_res.get("label", "neutral")
+        sent_score = sent_res.get("sentiment_score", 0.0)
+        sent_probs = sent_res.get("probabilities", {})
+        sent_prob = sent_probs.get(sent_label, 0.78)
+    except Exception as e:
+        logger.warning(f"FinBERT sentiment classifier fallback: {e}")
+        sent_label, sent_score, sent_prob = "neutral", 0.0, 0.72
+
+    # Step 5: Base Uncertainty & Fused Directional Conviction Scoring
+    uncertainty_result = score_uncertainty(
+        v_actual,
+        surprises,
+        consensus_dict,
+        sentiment_label=sent_label,
+        sentiment_score=sent_score,
+        sentiment_prob=sent_prob
+    )
     direction_label = uncertainty_result["direction"]
     base_confidence = uncertainty_result["confidence"]
     

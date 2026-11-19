@@ -27,9 +27,10 @@ def generate_and_store_consensus(ticker:str):
             "id":str(uuid.uuid4()),
             "ticker":ticker,
             "regime":stats['market_regime'],
-            "v_consensus_base":v_base,
-            "v_consensus_bear":v_bear,
-            "v_consensus_options":v_options,
+            "v_consensus_base": v_base,
+            "v_consensus_bull": v_bull,
+            "v_consensus_bear": v_bear,
+            "v_consensus_options": v_options,
             "analyst_options_divergence":0.05 #mock divergence metric 
         }
 

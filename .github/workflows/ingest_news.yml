@@ -19,7 +19,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests supabase python-dotenv torch transformers sentence-transformers scikit-learn
+          pip install --upgrade pip
+          pip install requests supabase python-dotenv torch torchvision transformers sentence-transformers scikit-learn numpy pandas xgboost yfinance loguru networkx matplotlib seaborn joblib
 
       - name: 📥 Phase 1 - Run News Fetcher
         env:

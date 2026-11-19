@@ -1,0 +1,15 @@
+[theme]
+primaryColor = "#1f6feb"
+backgroundColor = "#0b0e14"
+secondaryBackgroundColor = "#151b23"
+textColor = "#e6edf3"
+font = "sans serif"
+
+[server]
+headless = true
+fileWatcherType = "watchdog"
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
